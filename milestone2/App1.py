@@ -21,7 +21,7 @@ while True:
     success, frame = cap.read()
     if not success:
         break
-
+    frame = cv2.flip(frame, 1)
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     result = hands.process(rgb)
 
