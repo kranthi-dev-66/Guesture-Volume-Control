@@ -1,78 +1,32 @@
-import cv2
-import mediapipe as mp
-import math
+from flask import Flask, render_template, Response, jsonify
+from gesture import GestureController
 
-mp_hands = mp.solutions.hands
-mp_draw = mp.solutions.drawing_utils
+app = Flask(__name__)
 
-hands = mp_hands.Hands(
-    static_image_mode=False,
-    max_num_hands=1,
-    model_complexity=0,
-    min_detection_confidence=0.6,
-    min_tracking_confidence=0.6
-)
+controller = GestureController()
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 640)
-cap.set(4, 480)
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-while True:
-    success, frame = cap.read()
-    if not success:
-        break
-    frame = cv2.flip(frame, 1)
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    result = hands.process(rgb)
+@app.route('/start')
+def start():
+    controller.start()
+    return jsonify({"status":"started"})
 
-    if result.multi_hand_landmarks:
-        for hand_landmarks in result.multi_hand_landmarks:
+@app.route('/stop')
+def stop():
+    controller.stop()
+    return jsonify({"status":"stopped"})
 
-            mp_draw.draw_landmarks(
-                frame,
-                hand_landmarks,
-                mp_hands.HAND_CONNECTIONS
-            )
+@app.route('/video')
+def video():
+    return Response(controller.generate_frames(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
-            h, w, _ = frame.shape
+@app.route('/volume')
+def volume():
+    return jsonify({"volume":controller.volume})
 
-            thumb = hand_landmarks.landmark[4]
-            index = hand_landmarks.landmark[8]
-
-            x1, y1 = int(thumb.x * w), int(thumb.y * h)
-            x2, y2 = int(index.x * w), int(index.y * h)
-
-            distance = math.hypot(x2 - x1, y2 - y1)
-
-            if distance < 30:
-                gesture = "SELECT"
-            elif distance < 80:
-                gesture = "HOLD"
-            else:
-                gesture = "RELEASE"
-
-            cv2.circle(frame, (x1, y1), 8, (0, 255, 0), -1)
-            cv2.circle(frame, (x2, y2), 8, (0, 255, 0), -1)
-            cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-
-            cv2.putText(frame, f"Distance: {int(distance)}",
-                        (20, 40),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.8,
-                        (0, 255, 255),
-                        2)
-
-            cv2.putText(frame, f"Gesture: {gesture}",
-                        (20, 80),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.8,
-                        (0, 255, 255),
-                        2)
-
-    cv2.imshow("Hand Detection", frame)
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    app.run(debug=True)
