@@ -41,8 +41,8 @@ h1 {
 /* 🔥 BIG FRAME */
 #video-feed {
   width: 100%;
-  height: 450px;          /* 🔥 bigger frame */
-  object-fit: cover;      /* nice fit */
+  height: 450px;          
+  object-fit: cover;      
   border-radius: 10px;
   background: black;
 }
