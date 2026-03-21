@@ -24,7 +24,7 @@ Python • Flask • OpenCV • MediaPipe • NumPy • Pycaw
 
 ```bash
 git clone https://github.com/kranthi-dev-66/Gesture-Volume-Control.git
-cd Gesture-Volume-Control
+cd GVC
 pip install -r requirements.txt
 python app.py
 ```
