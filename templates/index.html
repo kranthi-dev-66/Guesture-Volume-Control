@@ -1,81 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-
-    <title>Gesture Volume Control</title>
-
+    <meta charset="UTF-8">
+    <title>Gesture Volume</title>
     <link rel="stylesheet" href="/static/style.css">
-
 </head>
 
 <body>
 
-    <h1>Gesture Volume Control</h1>
+<h1>GestureVolume - Hand Gesture Control</h1>
 
-    <div class="buttons">
+<div class="main">
 
-        <button onclick="startCamera()">Start</button>
-        <button onclick="stopCamera()">Stop</button>
+    <!-- LEFT -->
+    <div class="left">
+
+        <div class="video-box">
+            <img id="video-feed" src="" />
+
+            <div id="overlayText" class="overlay">
+                Click Start to begin
+            </div>
+        </div>
+
+        <div class="info">
+            <p id="volumeText">Volume: 0%</p>
+            <p id="distanceText">Distance: -- px</p>
+        </div>
+
+        <div class="volume-ui">
+            <div id="volumePercent">0%</div>
+
+            <div class="progress-bar">
+                <div id="progressFill"></div>
+            </div>
+        </div>
 
     </div>
 
-    <h2>Webcam Preview</h2>
+    <!-- RIGHT -->
+    <div class="right">
 
-    <div class="cam">
+        <div class="card">
+            <h3>Camera Controls</h3>
+            <button id="startBtn" class="start">▶ Start Camera</button>
+            <button id="stopBtn" class="stop" disabled>■ Stop Camera</button>
+        </div>
 
-        <img id="video" width="500">
+        <div class="card">
+            <h3>System Status</h3>
+
+            <div class="status-grid">
+
+                <div class="status-card">
+                    <p class="gray">Camera</p>
+                    <p id="camStatus" class="green">Inactive</p>
+                </div>
+
+                <div class="status-card">
+                    <p class="gray">Gesture</p>
+                    <p id="gestureStatus" class="yellow">Idle</p>
+                </div>
+
+                <div class="status-card">
+                    <p class="gray">Type</p>
+                    <p id="gestureType" class="blue">-</p>
+                </div>
+
+                <div class="status-card">
+                    <p class="gray">Quality</p>
+                    <p id="gestureQuality" class="green">-</p>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>User Guide</h3>
+            <ul>
+                <li>Click Start to activate camera</li>
+                <li>Show your hand</li>
+                <li>Move thumb & index finger</li>
+                <li>Distance controls volume</li>
+                <li>Click Stop to exit</li>
+            </ul>
+        </div>
 
     </div>
 
-    <h2>Volume : <span id="vol">0</span>%</h2>
+</div>
 
-    <div class="bar">
+<script>
+const video = document.getElementById("video-feed")
+const startBtn = document.getElementById("startBtn")
+const stopBtn = document.getElementById("stopBtn")
+const overlay = document.getElementById("overlayText")
 
-        <div id="progress"></div>
+startBtn.onclick = async () => {
+    await fetch("/start")
+    video.src = "/video?" + Date.now()
 
-    </div>
+    overlay.style.display = "none"
 
-    <script>
-        function startCamera() {
+    startBtn.disabled = true
+    stopBtn.disabled = false
 
-            fetch("/start")
-                .then(response => response.json())
-                .then(data => {
+    document.getElementById("camStatus").innerText = "Active"
+    document.getElementById("gestureStatus").innerText = "Detecting"
+}
 
-                    console.log(data)
+stopBtn.onclick = async () => {
+    await fetch("/stop")
+    video.src = ""
 
-                    document.getElementById("video").src = "/video"
+    overlay.style.display = "block"
 
-                })
+    startBtn.disabled = false
+    stopBtn.disabled = true
 
-        }
+    document.getElementById("camStatus").innerText = "Inactive"
+    document.getElementById("gestureStatus").innerText = "Idle"
+}
 
-        function stopCamera() {
+setInterval(async () => {
+    if (!stopBtn.disabled) {
+        const res = await fetch("/volume")
+        const data = await res.json()
 
-            fetch("/stop")
+        const vol = data.volume
 
-            document.getElementById("video").src = ""
+        document.getElementById("volumeText").innerText =
+            "Volume: " + vol + "%"
 
-        }
+        document.getElementById("distanceText").innerText =
+            "Distance: " + data.distance + " px"
 
-        setInterval(() => {
+        document.getElementById("progressFill").style.width =
+            vol + "%"
 
-            fetch("/volume")
-                .then(res => res.json())
-                .then(data => {
+        document.getElementById("volumePercent").innerText =
+            vol + "%"
 
-                    document.getElementById("vol").innerText = data.volume
+        document.getElementById("gestureType").innerText =
+            vol > 50 ? "Volume Up" : "Volume Down"
 
-                    let v = Math.min(100, data.volume)
-
-                    document.getElementById("vol").innerText = v
-                    document.getElementById("progress").style.width = v + "%"
-                })
-
-        }, 500)
-    </script>
+        document.getElementById("gestureQuality").innerText =
+            data.distance > 50 ? "Good" : "Low"
+    }
+}, 300)
+</script>
 
 </body>
-
 </html>
